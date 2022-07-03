@@ -27,7 +27,7 @@
       <q-item
         v-for="task in tasks"
         :key="task.title"
-        @click="task.done = !task.done"
+        @click="task.done = !task.done; setDone(task)"
         :class="{ 'done bg-pink-2': task.done}"
         clickable
         v-ripple>
@@ -83,6 +83,7 @@
 </template>
 
 <script lang="ts">
+import { LocalStorage } from 'quasar';
 import { defineComponent, ref } from 'vue';
 interface TaskInterface {
   title: string
@@ -90,38 +91,40 @@ interface TaskInterface {
 }
 export default defineComponent({
   name: 'TodoPage',
+
+  mounted() {
+    for (const [title, done] of Object.entries(LocalStorage.getAll() as boolean)) {
+      this.tasks.push({ title, done })
+    }
+  },
+
   methods: {
     addTask() {
       this.tasks.push({
         title: this.newTask,
         done: false
       })
+      LocalStorage.set(this.newTask, false)
       this.newTask = ''
     },
+    
+    setDone(task: TaskInterface) {
+      LocalStorage.set(task.title, task.done)
+    },
+
     deleteTask() {
       this.tasks = this.tasks.filter(storeTask => storeTask.title !== this.confirmModalTask.title)
       this.$q.notify('Task deleted')
+      LocalStorage.remove(this.confirmModalTask.title)
     }
   },
+
   setup() {
     return {
       newTask: ref(''),
       confirmModalTask: ref<TaskInterface | Record<string, never>>({}),
       confirmModal: ref(false),
-      tasks: ref<TaskInterface[]>([
-        // {
-        //   title: 'Get an ice cream',
-        //   done: false
-        // },
-        // {
-        //   title: 'Eat an ice cream',
-        //   done: false
-        // },
-        // {
-        //   title: 'an ice cream',
-        //   done: true
-        // },
-      ])
+      tasks: ref<TaskInterface[]>([])
     }
   }
 });
